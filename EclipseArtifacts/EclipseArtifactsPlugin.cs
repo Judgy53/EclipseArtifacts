@@ -1,6 +1,4 @@
 using BepInEx;
-using R2API;
-using R2API.Utils;
 using RoR2.ContentManagement;
 using System;
 using UnityEngine;
@@ -8,11 +6,9 @@ using UnityEngine;
 namespace EclipseArtifacts
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    [BepInDependency(R2API.R2API.PluginGUID)]
-    [R2APISubmoduleDependency(nameof(LanguageAPI))]
-	
-	public class EclipseArtifactsPlugin : BaseUnityPlugin
-	{
+    [BepInDependency(R2API.LanguageAPI.PluginGUID)]
+    public class EclipseArtifactsPlugin : BaseUnityPlugin
+    {
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Judgy";
         public const string PluginName = "EclipseArtifacts";
@@ -36,7 +32,7 @@ namespace EclipseArtifacts
 
         public static void RegisterLanguageToken(string token, string text)
         {
-            LanguageAPI.Add(token, text);
+            R2API.LanguageAPI.Add(token, text);
         }
 
         public static Sprite LoadResourceSprite(string resName)
