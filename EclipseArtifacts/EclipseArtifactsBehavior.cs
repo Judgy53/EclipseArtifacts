@@ -118,4 +118,6 @@ namespace EclipseArtifacts
 				Debug.LogWarning($"Eclipse{targetArtifact}Hook Failed");
 		}
 	}
+            IL.RoR2.HoldoutZoneController.DoUpdate += (il) => GetSelectedEclipseHook(il, 2, DifficultyIndex.Eclipse2);
+            IL.RoR2.HealthComponent.TakeDamageProcess += (il) => GetSelectedEclipseHook(il, 8, DifficultyIndex.Eclipse8);
 }
