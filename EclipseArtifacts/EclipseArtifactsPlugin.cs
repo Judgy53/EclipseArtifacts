@@ -20,19 +20,20 @@ namespace EclipseArtifacts
 
             ContentManager.collectContentPackProviders += ContentManager_collectContentPackProviders;
 
-            EclipseArtifactsBehavior.Init();
+            EclipseArtifactsBehavior.EnableHooks();
 
             Log.LogInfo(nameof(Awake) + " done.");
+        }
+
+        public void Update()
+        {
+            if (!EclipseArtifactsLanguage.TokensRegistered)
+                EclipseArtifactsLanguage.TryRegisterTokens();
         }
 
         private void ContentManager_collectContentPackProviders(ContentManager.AddContentPackProviderDelegate addContentPackProvider)
         {
             addContentPackProvider(new EclipseArtifactsContent());
-        }
-
-        public static void RegisterLanguageToken(string token, string text)
-        {
-            R2API.LanguageAPI.Add(token, text);
         }
 
         public static Sprite LoadResourceSprite(string resName)
