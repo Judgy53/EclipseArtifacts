@@ -7,6 +7,7 @@ namespace EclipseArtifacts
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency(R2API.LanguageAPI.PluginGUID)]
+    [BepInDependency("com.Puporongod.EclipseRefurbished", BepInDependency.DependencyFlags.SoftDependency)]
     public class EclipseArtifactsPlugin : BaseUnityPlugin
     {
         public const string PluginGUID = PluginAuthor + "." + PluginName;
@@ -23,6 +24,11 @@ namespace EclipseArtifacts
             EclipseArtifactsBehavior.EnableHooks();
 
             Log.LogInfo(nameof(Awake) + " done.");
+        }
+
+        public void OnDestroy()
+        {
+            EclipseArtifactsBehavior.DisableHooks();
         }
 
         public void Update()

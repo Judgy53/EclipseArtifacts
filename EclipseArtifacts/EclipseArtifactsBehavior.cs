@@ -1,7 +1,5 @@
 ﻿using MonoMod.Cil;
 using RoR2;
-using System;
-using UnityEngine;
 
 namespace EclipseArtifacts
 {
@@ -25,42 +23,80 @@ namespace EclipseArtifacts
         {
             if (_hooksEnabled) return;
 
-            IL.RoR2.CharacterMaster.OnBodyStart += (il) => GetSelectedEclipseHook(il, 1, DifficultyIndex.Eclipse1);
-            IL.RoR2.HoldoutZoneController.DoUpdate += (il) => GetSelectedEclipseHook(il, 2, DifficultyIndex.Eclipse2);
-            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer += (il) => GetSelectedEclipseHook(il, 3, DifficultyIndex.Eclipse3);
-            IL.RoR2.CharacterBody.RecalculateStats += (il) => GetSelectedEclipseHook(il, 4, DifficultyIndex.Eclipse4);
-            IL.RoR2.HealthComponent.Heal += (il) => GetSelectedEclipseHook(il, 5, DifficultyIndex.Eclipse5);
-            IL.RoR2.DeathRewards.OnKilledServer += (il) => GetSelectedEclipseHook(il, 6, DifficultyIndex.Eclipse6);
-            IL.RoR2.CharacterBody.RecalculateStats += (il) => GetSelectedEclipseHook(il, 7, DifficultyIndex.Eclipse7);
-            IL.RoR2.HealthComponent.TakeDamageProcess += (il) => GetSelectedEclipseHook(il, 8, DifficultyIndex.Eclipse8);
+            IL.RoR2.CharacterMaster.OnBodyStart += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HoldoutZoneController.DoUpdate += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.Heal += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.DeathRewards.OnKilledServer += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.TakeDamageProcess += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+
+            if (EclipseRefurbishedCompat.Enabled)
+                EclipseRefurbishedCompat.EnableHooks();
 
             _hooksEnabled = true;
         }
 
-        //Adapted hook method from ZetArtifacts. Source : https://github.com/William758/ZetArtifacts/blob/532af3d3e6775b6441d4025dc05e44c100ebea4d/ZetEclifact.cs#L50
-        private static void GetSelectedEclipseHook(ILContext il, int targetArtifact, DifficultyIndex diff)
+        public static void DisableHooks()
         {
-            ILCursor c = new ILCursor(il);
+            if (!_hooksEnabled) return;
 
-            bool found = c.TryGotoNext(
-                x => x.MatchCall<Run>("get_instance"),
-                x => x.MatchCallvirt<Run>("get_selectedDifficulty"),
-                x => x.MatchLdcI4((int)diff)
-            );
+            IL.RoR2.CharacterMaster.OnBodyStart -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HoldoutZoneController.DoUpdate -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.Heal -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.DeathRewards.OnKilledServer -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.TakeDamageProcess -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
 
-            if (found)
+            if (EclipseRefurbishedCompat.Enabled)
+                EclipseRefurbishedCompat.DisableHooks();
+
+            _hooksEnabled = false;
+        }
+
+        //Adapted hook method from ZetArtifacts. Source : https://github.com/William758/ZetArtifacts/blob/532af3d3e6775b6441d4025dc05e44c100ebea4d/ZetEclifact.cs#L50
+        public static void ReplaceCall_Run_GetSelectedDifficulty(ILContext il, bool overrideDiffWhenAnyArtifactIsEnabled = false)
+        {
+            var cursor = new ILCursor(il);
+            bool found = false;
+
+            do
             {
-                c.Index += 2;
+                int checkedDiff = -1;
+                found = cursor.TryGotoNext( // Run.instance.get_selectedDifficulty >= {checkedDiff}
+                    x => x.MatchCall<Run>("get_instance"),
+                    x => x.MatchCallvirt<Run>("get_selectedDifficulty"),
+                    x => x.MatchLdcI4(out checkedDiff)
+                );
 
-                c.EmitDelegate<Func<DifficultyIndex, DifficultyIndex>>((diffIndex) =>
+                if (found && checkedDiff >= (int)DifficultyIndex.Eclipse1 && checkedDiff <= (int)DifficultyIndex.Eclipse8)
                 {
-                    if (IsArtifactEnabled(targetArtifact)) return diff;
+                    int eclipseIndex = checkedDiff - (int)DifficultyIndex.Hard;
 
-                    return diffIndex;
-                });
-            }
-            else
-                Debug.LogWarning($"Eclipse{targetArtifact}Hook Failed");
+                    var labels = cursor.IncomingLabels; //Save labels pointing to next instr before removing them.
+
+                    cursor.RemoveRange(2); //Remove `Run.instance.get_selectedDifficulty`
+                    cursor.EmitDelegate(() =>
+                    {
+                        for (int i = 1; i <= 8; i++)
+                        {
+                            if ((i == eclipseIndex || overrideDiffWhenAnyArtifactIsEnabled) && IsArtifactEnabled(i))
+                                return (DifficultyIndex)checkedDiff;
+                        }
+
+                        return Run.instance.selectedDifficulty;
+                    });
+
+                    //Restore saved labels
+                    cursor.Index -= 2;
+                    foreach (var label in labels) 
+                        cursor.MarkLabel(label);
+                    cursor.Index += 2;
+                }
+            } while (found);
         }
     }
 }

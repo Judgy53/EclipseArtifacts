@@ -50,7 +50,12 @@ namespace EclipseArtifacts
             }
 
             var cleanedModifier = modifierFull[prefix.Length..].TrimEnd('\n');
-            var description = $"Enable Eclipse {eclipseLevel} modifier.\n<style=cStack>>{cleanedModifier}";
+            //var description = $"Enable Eclipse {eclipseLevel} modifier.\n<style=cStack>>{cleanedModifier}";
+            var description = $"<style=cStack>>{cleanedModifier}";
+
+
+            if (EclipseRefurbishedCompat.Enabled)
+                description = EclipseRefurbishedCompat.AddDirectorCreditsToDescription(description);
 
             return description;
         }
