@@ -13,7 +13,7 @@ namespace EclipseArtifacts
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Judgy";
         public const string PluginName = "EclipseArtifacts";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "1.2.0";
 
         public void Awake()
         {
@@ -54,7 +54,7 @@ namespace EclipseArtifacts
                 tex.Apply();
 
                 sprite = Sprite.Create(tex, new Rect(0, 0, 128, 128), new Vector2(64, 64));
-            } 
+            }
             catch (Exception e)
             {
                 Debug.LogError(e.ToString());
