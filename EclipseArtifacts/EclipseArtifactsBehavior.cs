@@ -1,5 +1,6 @@
 ﻿using MonoMod.Cil;
 using RoR2;
+using System;
 
 namespace EclipseArtifacts
 {
@@ -23,14 +24,14 @@ namespace EclipseArtifacts
         {
             if (_hooksEnabled) return;
 
-            IL.RoR2.CharacterMaster.OnBodyStart += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HoldoutZoneController.DoUpdate += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.CharacterBody.RecalculateStats += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HealthComponent.Heal += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.DeathRewards.OnKilledServer += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.CharacterBody.RecalculateStats += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HealthComponent.TakeDamageProcess += (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterMaster.OnBodyStart += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HoldoutZoneController.DoUpdate += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.Heal += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.DeathRewards.OnKilledServer += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats += (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.TakeDamageProcess += (il) => ILHook_GetSelectedDifficulty(il);
 
             if (EclipseRefurbishedCompat.Enabled)
                 EclipseRefurbishedCompat.EnableHooks();
@@ -42,14 +43,14 @@ namespace EclipseArtifacts
         {
             if (!_hooksEnabled) return;
 
-            IL.RoR2.CharacterMaster.OnBodyStart -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HoldoutZoneController.DoUpdate -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HealthComponent.Heal -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.DeathRewards.OnKilledServer -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
-            IL.RoR2.HealthComponent.TakeDamageProcess -= (il) => ReplaceCall_Run_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterMaster.OnBodyStart -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HoldoutZoneController.DoUpdate -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.Heal -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.DeathRewards.OnKilledServer -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.CharacterBody.RecalculateStats -= (il) => ILHook_GetSelectedDifficulty(il);
+            IL.RoR2.HealthComponent.TakeDamageProcess -= (il) => ILHook_GetSelectedDifficulty(il);
 
             if (EclipseRefurbishedCompat.Enabled)
                 EclipseRefurbishedCompat.DisableHooks();
@@ -57,8 +58,9 @@ namespace EclipseArtifacts
             _hooksEnabled = false;
         }
 
+
         //Adapted hook method from ZetArtifacts. Source : https://github.com/William758/ZetArtifacts/blob/532af3d3e6775b6441d4025dc05e44c100ebea4d/ZetEclifact.cs#L50
-        public static void ReplaceCall_Run_GetSelectedDifficulty(ILContext il, bool overrideDiffWhenAnyArtifactIsEnabled = false)
+        public static void ILHook_GetSelectedDifficulty(ILContext il, bool overrideDiffWhenAnyArtifactIsEnabled = false)
         {
             var cursor = new ILCursor(il);
             bool found = false;
@@ -74,29 +76,36 @@ namespace EclipseArtifacts
 
                 if (found && checkedDiff >= (int)DifficultyIndex.Eclipse1 && checkedDiff <= (int)DifficultyIndex.Eclipse8)
                 {
-                    int eclipseIndex = checkedDiff - (int)DifficultyIndex.Hard;
-
-                    var labels = cursor.IncomingLabels; //Save labels pointing to next instr before removing them.
-
-                    cursor.RemoveRange(2); //Remove `Run.instance.get_selectedDifficulty`
-                    cursor.EmitDelegate(() =>
-                    {
-                        for (int i = 1; i <= 8; i++)
-                        {
-                            if ((i == eclipseIndex || overrideDiffWhenAnyArtifactIsEnabled) && IsArtifactEnabled(i))
-                                return (DifficultyIndex)checkedDiff;
-                        }
-
-                        return Run.instance.selectedDifficulty;
-                    });
-
-                    //Restore saved labels
-                    cursor.Index -= 2;
-                    foreach (var label in labels) 
-                        cursor.MarkLabel(label);
                     cursor.Index += 2;
+                    cursor.EmitDelegate<Func<DifficultyIndex, DifficultyIndex>>((currentDiffIndex) =>
+                    {
+                        if (ShouldOverrideDifficulty(checkedDiff, overrideDiffWhenAnyArtifactIsEnabled))
+                        {
+                            //Log.LogDebug($"{il.Method?.FullName}: overriden (checkedDiff: {checkedDiff - (int)DifficultyIndex.Hard}, any: {overrideDiffWhenAnyArtifactIsEnabled})");
+                            return (DifficultyIndex)checkedDiff;
+                        }
+                        //Log.LogDebug($"{il.Method?.FullName}: NOT overriden (checkedDiff: {checkedDiff - (int)DifficultyIndex.Hard}, any: {overrideDiffWhenAnyArtifactIsEnabled})");
+
+                        return currentDiffIndex;
+                    });
                 }
             } while (found);
+        }
+
+        public static bool ShouldOverrideDifficulty(int checkedDiff, bool overrideDiffWhenAnyArtifactIsEnabled)
+        {
+            int eclipseIndex = checkedDiff - (int)DifficultyIndex.Hard;
+
+            for (int i = 1; i <= 8; i++)
+            {
+                if (i != eclipseIndex && overrideDiffWhenAnyArtifactIsEnabled == false)
+                    continue;
+
+                if (IsArtifactEnabled(i))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

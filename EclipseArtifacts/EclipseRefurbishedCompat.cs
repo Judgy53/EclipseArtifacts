@@ -57,12 +57,12 @@ namespace EclipseArtifacts
 
         public static void Modify_CombatDirector_OnEnable(ILContext il)
         {
-            EclipseArtifactsBehavior.ReplaceCall_Run_GetSelectedDifficulty(il, overrideDiffWhenAnyArtifactIsEnabled: true);
+            EclipseArtifactsBehavior.ILHook_GetSelectedDifficulty(il, overrideDiffWhenAnyArtifactIsEnabled: true);
         }
 
         public static void Modify_ATKSpeedAndAWUCooldown(ILContext il)
         {
-            EclipseArtifactsBehavior.ReplaceCall_Run_GetSelectedDifficulty(il);
+            EclipseArtifactsBehavior.ILHook_GetSelectedDifficulty(il);
         }
 
         private static MethodInfo GetCombatDirectorEnableMethod()
