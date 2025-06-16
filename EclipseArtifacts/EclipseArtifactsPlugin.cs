@@ -13,7 +13,7 @@ namespace EclipseArtifacts
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Judgy";
         public const string PluginName = "EclipseArtifacts";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.2.1";
 
         public void Awake()
         {
