@@ -1,6 +1,6 @@
 ﻿{
 	"name": "EclipseArtifacts",
-	"version_number": "1.2.1",
+	"version_number": "1.3.0",
 	"website_url": "https://github.com/Judgy53/EclipseArtifacts",
 	"description": "Makes all Eclipse modifiers available as individual artifacts.",
 	"dependencies": [
