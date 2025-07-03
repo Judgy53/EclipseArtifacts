@@ -33,6 +33,9 @@ namespace EclipseArtifacts
             IL.RoR2.CharacterBody.RecalculateStats += (il) => ILHook_GetSelectedDifficulty(il);
             IL.RoR2.HealthComponent.TakeDamageProcess += (il) => ILHook_GetSelectedDifficulty(il);
 
+            //Compat between E3 and Frailty
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer += ILHook_FrailtyCompat;
+
             if (EclipseRefurbishedCompat.Enabled)
                 EclipseRefurbishedCompat.EnableHooks();
 
@@ -51,6 +54,8 @@ namespace EclipseArtifacts
             IL.RoR2.DeathRewards.OnKilledServer -= (il) => ILHook_GetSelectedDifficulty(il);
             IL.RoR2.CharacterBody.RecalculateStats -= (il) => ILHook_GetSelectedDifficulty(il);
             IL.RoR2.HealthComponent.TakeDamageProcess -= (il) => ILHook_GetSelectedDifficulty(il);
+
+            IL.RoR2.GlobalEventManager.OnCharacterHitGroundServer -= ILHook_FrailtyCompat;
 
             if (EclipseRefurbishedCompat.Enabled)
                 EclipseRefurbishedCompat.DisableHooks();
@@ -106,6 +111,49 @@ namespace EclipseArtifacts
             }
 
             return false;
+        }
+
+        public static void ILHook_FrailtyCompat(ILContext il)
+        {
+            var cursor = new ILCursor(il);
+
+            bool found = cursor.TryGotoNext(
+                x => x.MatchLdloc(7),
+                x => x.MatchDup(),
+                x => x.MatchLdfld<DamageInfo>("damage"),
+                x => x.MatchLdcR4(2),
+                x => x.MatchMul()
+            );
+
+            if (!found)
+            {
+                Log.LogError("FrailtyCompat hook failed");
+                return;
+            }
+
+            cursor.Index += 3; // Next = ldc.r4 2
+            cursor.Remove();
+
+            cursor.EmitDelegate(() =>
+            {
+                bool frailtyEnabled = RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.weakAssKneesArtifactDef);
+                bool e3Enabled = IsArtifactEnabled(3);
+
+                if (frailtyEnabled && e3Enabled)
+                {
+                    switch (EclipseArtifactsConfig.frailtyCompatMode.Value)
+                    {
+                        case EclipseArtifactsConfig.FrailtyCompatMode.Vanilla:
+                            return 2f; // default * 2 = 100% total
+                        case EclipseArtifactsConfig.FrailtyCompatMode.Additive:
+                            return 2f + 1f; // default * 2, added +100% = +200% total
+                        case EclipseArtifactsConfig.FrailtyCompatMode.Multiplicative:
+                            return 2f * 2f; // default * 2, added * 2 = +300% total
+                    }
+                }
+
+                return 2f;
+            });
         }
     }
 }

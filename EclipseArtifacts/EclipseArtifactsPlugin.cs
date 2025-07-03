@@ -15,9 +15,14 @@ namespace EclipseArtifacts
         public const string PluginName = "EclipseArtifacts";
         public const string PluginVersion = "1.2.1";
 
+        public static string PluginDirectory;
+
         public void Awake()
         {
+            PluginDirectory = System.IO.Path.GetDirectoryName(Info.Location);
+
             Log.Init(Logger);
+            EclipseArtifactsConfig.Init(Config);
 
             ContentManager.collectContentPackProviders += ContentManager_collectContentPackProviders;
 
